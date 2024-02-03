@@ -1,10 +1,17 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import '@/assets/global.css'
 
 Vue.use(VueRouter)
 
 const routes = [
+  {
+    path: '/reg',
+    component: () => import('@/views/register')
+  },
+  {
+    path: '/login',
+    component: () => import('@/views/login')
+  }
 ]
 
 const router = new VueRouter({

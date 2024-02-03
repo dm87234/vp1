@@ -1,5 +1,6 @@
 <template>
-  <div></div>
+    <!-- 一級路由掛載點 -->
+     <router-view></router-view>
 </template>
 
 <script>
