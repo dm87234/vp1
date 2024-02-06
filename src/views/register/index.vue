@@ -6,19 +6,19 @@
       <!-- 标题的盒子 -->
       <div class="title-box"></div>
       <!-- 注册的表单区域 -->
-      <el-form ref="form" :model="form">
-        <el-form-item>
+      <el-form ref="form" :model="form" :rules="rulesObj">
+        <el-form-item prop="username">
           <el-input placeholder="請輸入用戶名" v-model="form.username"></el-input>
         </el-form-item>
-        <el-form-item>
-          <el-input placeholder="請輸入密碼" v-model="form.password"></el-input>
+        <el-form-item prop="password">
+          <el-input type="password" placeholder="請輸入密碼" v-model="form.password"></el-input>
         </el-form-item>
-        <el-form-item>
-          <el-input placeholder="請再次輸入密碼" v-model="form.repassword"></el-input>
+        <el-form-item prop="repassword">
+          <el-input type="password" placeholder="請再次輸入密碼" v-model="form.repassword"></el-input>
         </el-form-item>
         <el-form-item>
           <el-button class="btn-reg" type="primary" @click="registerFn">註冊</el-button>
-          <el-link type="primary">去登录</el-link>
+          <el-link type="primary" @click="$router.push('/login')">去登录</el-link>
         </el-form-item>
       </el-form>
     </div>
@@ -26,21 +26,61 @@
 </template>
 
 <script>
+import { registerAPI } from '@/api/index'
 // 前端綁定對象的屬性名，最好跟後端接口的參數名一致
 export default {
   name: 'my-register',
   data () {
+    const samePwd = (rule, value, callback) => {
+      if (value !== this.form.password) {
+        callback(new Error('兩次輸入的密碼不一致'))
+      } else {
+        callback()
+      }
+    }
     return {
-      form: {
+      form: { // 表單的數據對象
         username: '',
         password: '',
         repassword: ''
+      },
+      rulesObj: { // 表單規則驗證對象
+        username: [
+          { required: true, message: '请输入活动名称', trigger: 'blur' },
+          {
+            pattern: /^[a-zA-Z0-9]{1,10}$/,
+            message: '用户名必须是1-10的大小写字母数字',
+            trigger: 'blur'
+          }
+        ],
+        password: [
+          { required: true, message: '请输入密码', trigger: 'blur' },
+          {
+            pattern: /^\S{6,15}$/,
+            message: '密码必须是6-15的非空字符',
+            trigger: 'blur'
+          }
+        ],
+        repassword: [
+          { required: true, message: '请再次输入密码', trigger: 'blur' },
+          { validator: samePwd, trigger: 'blur' }
+        ]
+
       }
     }
   },
   methods: {
     registerFn () {
-      console.log(11)
+      this.$refs.form.validate(async valid => {
+        if (!valid) return false
+        // 通過校驗 拿到用户输入的内容 傳給後端
+        const { data: { code, message } } = await registerAPI(this.form)
+        if (code !== 0) {
+          return this.$message.error(message)
+        }
+        this.$message.success(message)
+        this.$router.push('/login')
+      })
     }
   }
 }

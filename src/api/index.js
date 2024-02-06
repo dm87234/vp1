@@ -5,16 +5,24 @@
 import request from '@/utils/request'
 
 // 註冊接口
-export const registerAPI = () => {
+export const registerAPI = ({ username, password, repassword }) => {
   // 原地是一個Promise對象 (內部包含原生ajax請求)
   // return 這個Promise對象到邏輯頁面，去那裏對Promise對象提取結果
   return request({
     url: '/api/reg',
     method: 'POST',
     data: {
-      username: 'lidongxu01',
-      password: '666666',
-      repassword: '666666'
+      username,
+      password,
+      repassword
     }
+  })
+}
+
+// 登錄街口
+export const loginAPI = (username, password) => {
+  return request.post('/api/login', {
+    username,
+    password
   })
 }
