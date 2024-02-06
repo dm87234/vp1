@@ -63,12 +63,14 @@ export default {
         if (!valid) return
         // 通過了發登陸請求
         const { data } = await loginAPI(this.loginForm.username, this.loginForm.password)
-        console.log(data)
+        // console.log(data)
         if (data.code !== 0) {
           this.$message.error(data.message)
         } else {
+          // 登錄成功
           this.$message.success(data.message)
           this.updateToken(data.token)
+          this.$router.push('/')
         }
       })
     }
