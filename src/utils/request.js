@@ -2,6 +2,7 @@
 // 先導入axios
 import axios from 'axios'
 import store from '@/store'
+import router from '@/router'
 
 // 用axios.create() 創建一個帶配置項的自定義axios函數
 // myAxios 請求的時候，地址是 baseURL + url
@@ -23,15 +24,24 @@ myAxios.interceptors.request.use(function (config) {
   return Promise.reject(error)
 })
 
-// // 添加响应拦截器
-// myAxios.interceptors.response.use(function (response) {
-//   // 2xx 范围内的状态码都会触发该函数。
-//   // 对响应数据做点什么
-//   return response
-// }, function (error) {
-//   // 超出 2xx 范围的状态码都会触发该函数。
-//   // 对响应错误做点什么
-//   return Promise.reject(error)
-// })
+// 添加响应拦截器
+myAxios.interceptors.response.use(function (response) {
+  // 2xx 范围内的状态码都会触发该函数。
+  // 对响应数据做点什么
+  return response
+}, function (error) {
+  // console.dir(error)
+  // 超出 2xx 范围的状态码都会触发该函数。
+  // 对响应错误做点什么
+  if (error.response.status === 401) {
+    // 本次響應token過期了
+    // 清除vuex裡的一切，然後切換回到登錄頁面
+    store.commit('updateToken', '')
+    store.commit('updateUserInfo', {})
+
+    router.push('/login')
+  }
+  return Promise.reject(error)
+})
 // 導出
 export default myAxios

@@ -45,3 +45,49 @@ export const getMenusAPI = () => {
     url: '/my/menus'
   })
 }
+
+// 更新用戶基本資料
+export const updateUserInfoAPI = ({ id, email, nickname, user_pic, username }) => {
+  return request({
+    url: '/my/userinfo',
+    method: 'put',
+    data: {
+      id,
+      email,
+      nickname,
+      user_pic,
+      username
+    }
+  })
+}
+
+// 更新用戶頭像
+export const updateAvatarAPI = (avatar) => {
+  return request({
+    url: '/my/update/avatar',
+    method: 'patch',
+    data: {
+      avatar
+    }
+  })
+}
+
+// 更新用戶頭像
+export const updatePwdAPI = ({ old_pwd, new_pwd, re_pwd }) => {
+  return request({
+    url: '/my/updatepwd',
+    method: 'patch',
+    data: {
+      old_pwd,
+      new_pwd,
+      re_pwd
+    }
+  })
+}
+
+// 獲取文章分類
+export const getArtCateListAPI = () => {
+  return request({
+    url: '/my/cate/list'
+  })
+}
