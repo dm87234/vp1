@@ -91,3 +91,48 @@ export const getArtCateListAPI = () => {
     url: '/my/cate/list'
   })
 }
+
+// 新增文章分類
+export const addArtCateAPI = ({ cate_name, cate_alias }) => {
+  return request({
+    url: '/my/cate/add',
+    method: 'post',
+    data: {
+      cate_name,
+      cate_alias
+    }
+  })
+}
+
+// 修改文章分類
+export const updateArtCateAPI = ({ id, cate_name, cate_alias }) => {
+  return request({
+    url: '/my/cate/info',
+    method: 'put',
+    data: {
+      id,
+      cate_name,
+      cate_alias
+    }
+  })
+}
+
+// 刪除文章分類
+export const delArtCateAPI = (id) => {
+  return request({
+    url: '/my/cate/del',
+    method: 'delete',
+    params: {
+      id
+    }
+  })
+}
+
+// 發布文章 or 存草稿
+export const uploadArticleAPI = (fd) => {
+  return request({
+    url: '/my/article/add',
+    method: 'POST',
+    data: fd // 参数要的是表单对象, 不能写普通对象, axios内部会判断, 如果是表单对象, 传递的请求体会设置Content-Type: form-data与后端对应
+  })
+}

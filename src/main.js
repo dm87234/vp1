@@ -5,11 +5,11 @@ import store from './store'
 
 import '@/assets/global.css'
 import '@/utils/element_ui'
-
+import '@/utils/editor'
 Vue.config.productionTip = false
 
 new Vue({
   router,
   store,
   render: h => h(App)
-}).$mount('#app')
+}).$mount('#app') // for bubble theme
