@@ -28,11 +28,17 @@
       </div>
 
       <!-- 文章表格区域 -->
-
+      <el-table :data="artList" style="width: 100%;" border stripe>
+        <el-table-column label="文章标题" prop="title"></el-table-column>
+        <el-table-column label="分类" prop="cate_name"></el-table-column>
+        <el-table-column label="发表时间" prop="pub_date"></el-table-column>
+        <el-table-column label="状态" prop="state"></el-table-column>
+        <el-table-column label="操作"></el-table-column>
+      </el-table>
       <!-- 分页区域 -->
 
       <!-- 发表文章的 Dialog 对话框 -->
-      <el-dialog title="发表文章" :visible.sync="pubDialogVisible" fullscreen :before-close="handleClose">
+      <el-dialog title="发表文章" :visible.sync="pubDialogVisible" fullscreen :before-close="handleClose" @close="dialogCloseFn">
         <!-- 发布文章的內容區 -->
         <el-form :model="pubForm" :rules="pubFormRules" ref="pubFormRef" label-width="100px">
           <el-form-item label="文章标题" prop="title">
@@ -51,8 +57,8 @@
           <!-- 上傳圖片 -->
           <el-form-item label="文章封面">
             <!-- 用来显示封面的图片 -->
-            <img v-if="!pubForm.coverImg" src="../../assets/images/cover.jpg" alt="" class="cover-img" ref="imgRef" />
-            <img v-else :src="pubForm.coverImg" alt="" class="cover-img" ref="imgRef" />
+            <img v-if="!pubForm.cover_img" src="../../assets/images/cover.jpg" class="cover-img"/>
+            <img v-else :src="pubForm.coverImg" class="cover-img" />
             <br />
             <!-- 文件选择框，默认被隐藏 -->
             <input type="file" @change="changeCoverFn" style="display: none;" accept="image/*" ref="iptFileRef" />
@@ -71,15 +77,15 @@
 </template>
 
 <script>
-import { getArtCateListAPI } from '@/api'
+import { getArtCateListAPI, uploadArticleAPI, getArticleListAPI } from '@/api'
 export default {
   name: 'ArtList',
   data () {
     return {
       // 查询参数对象
       q: {
-        pagenum: 1,
-        pagesize: 2,
+        pagenum: 1, // 默認拿第一頁數據
+        pagesize: 5, // 當前頁要幾條數據
         cate_id: '',
         state: ''
       },
@@ -90,7 +96,8 @@ export default {
         title: '',
         cate_id: '',
         content: '', // 文章內容
-        cover_img: null, // 文章封面
+        cover_img: null, // 文章封面(傳給後台)
+        coverImg: null, // 文章封面(前台)
         state: '' // 文章發布狀態
       },
       // 表单的验证规则对象
@@ -106,7 +113,9 @@ export default {
           { required: true, message: '请輸入文章內容', trigger: 'blur' }
         ]
       },
-      cateList: [] // 儲存文章分類
+      cateList: [], // 儲存文章分類
+      artList: [], // 儲存文章列表
+      total: 0 // 文章總數
     }
   },
   methods: {
@@ -128,6 +137,13 @@ export default {
     async getCateListFn () {
       const { data } = await getArtCateListAPI()
       this.cateList = data.data
+    },
+    // 請求文章
+    async getArticleListFn () {
+      const { data: res } = await getArticleListAPI(this.q)
+      if (res.code !== 0) return this.$message.error('获取文章列表失败!')
+      this.artList = res.data
+      this.total = res.total
     },
     // 富文本編輯器內容改變觸發此事件方法
     contentChangeFn () {
@@ -155,19 +171,44 @@ export default {
     },
     // 發布或存草稿
     pubArticleFn (state) {
+      // 設置發布狀態
       this.pubForm.state = state
-      this.$refs.pubFormRef.validate((valid) => {
-        if (valid) {
-          console.log(11)
-          // console.log(this.pubForm)
-        } else {
-          return false
-        }
+      this.$refs.pubFormRef.validate(async (valid) => {
+        if (!valid) return this.$message.error('请完善文章信息！')
+        // 3. 判断是否提供了文章封面
+        if (!this.pubForm.cover_img) return this.$message.error('请选择文章封面！')
+        // 4. TODO：发布文章
+        const fd = new FormData()
+        fd.append('title', this.pubForm.title)
+        fd.append('cate_id', this.pubForm.cate_id)
+        fd.append('content', this.pubForm.content)
+        fd.append('cover_img', this.pubForm.cover_img)
+        fd.append('state', this.pubForm.state)
+        // 傳給後台
+        const { data: res } = await uploadArticleAPI(fd)
+        if (res.code !== 0) return this.$message.error('发布文章失败！')
+        this.$message.success('发布文章成功！')
+        this.pubDialogVisible = false
+        this.getArticleListFn()
       })
+    },
+    // 對話框關閉時清空表單
+    dialogCloseFn () {
+      this.$refs.pubFormRef.resetFields()
+      this.pubForm = {
+        title: '',
+        cate_id: '',
+        content: '', // 文章內容
+        cover_img: null, // 文章封面(傳給後台)
+        coverImg: null, // 文章封面(前台)
+        state: '' // 文章發布狀態
+      }
+      console.log(this.pubForm)
     }
   },
   created () {
     this.getCateListFn()
+    this.getArticleListFn()
   }
 }
 </script>
