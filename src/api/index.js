@@ -149,3 +149,24 @@ export const getArticleListAPI = ({ pagenum, pagesize, cate_id, state }) => {
     }
   })
 }
+
+// 獲取文章詳情
+export const getArticleDetailFn = (id) => {
+  return request({
+    url: '/my/article/info',
+    params: {
+      id
+    }
+  })
+}
+
+// 刪除文章
+export const delArticleAPI = (id) => {
+  return request({
+    url: '/my/article/info',
+    method: 'delete',
+    params: {
+      id
+    }
+  })
+}

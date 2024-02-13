@@ -19,8 +19,8 @@
             </el-select>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" size="small">筛选</el-button>
-            <el-button type="info" size="small">重置</el-button>
+            <el-button type="primary" size="small" @click="choseFn">筛选</el-button>
+            <el-button type="info" size="small" @click="resetFn">重置</el-button>
           </el-form-item>
         </el-form>
         <!-- 发表文章的按钮 -->
@@ -29,13 +29,38 @@
 
       <!-- 文章表格区域 -->
       <el-table :data="artList" style="width: 100%;" border stripe>
-        <el-table-column label="文章标题" prop="title"></el-table-column>
+        <el-table-column label="文章标题" prop="title">
+          <template v-slot="scope">
+            <el-link type="primary" @click="showDetailFn(scope.row.id)">{{scope.row.title}}</el-link>
+          </template>
+        </el-table-column>
         <el-table-column label="分类" prop="cate_name"></el-table-column>
-        <el-table-column label="发表时间" prop="pub_date"></el-table-column>
+        <el-table-column label="发表时间" prop="pub_date">
+          <template v-slot="scope">
+            <span>{{$formatDate(scope.row.pub_date)}}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" prop="state"></el-table-column>
-        <el-table-column label="操作"></el-table-column>
+        <el-table-column label="操作">
+          <template v-slot="{ row }">
+            <el-button type="danger" size="mini" @click="removeFn(row.id)">删除</el-button>
+          </template>
+        </el-table-column>
       </el-table>
+
       <!-- 分页区域 -->
+      <!-- handleSizeChangeFn: 選擇每頁要顯示的筆數 -->
+      <!-- handleCurrentChangeFn: 點擊頁碼時觸發的函數 -->
+      <el-pagination
+        @size-change="handleSizeChangeFn"
+        @current-change="handleCurrentChangeFn"
+        :current-page.sync="q.pagenum"
+        :page-sizes="[2, 3, 5, 10]"
+        :page-size.sync="q.pagesize"
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="total"
+      >
+      </el-pagination>
 
       <!-- 发表文章的 Dialog 对话框 -->
       <el-dialog title="发表文章" :visible.sync="pubDialogVisible" fullscreen :before-close="handleClose" @close="dialogCloseFn">
@@ -72,12 +97,35 @@
           </el-form-item>
         </el-form>
       </el-dialog>
+
+      <!-- 查看文章详情的对话框 -->
+      <el-dialog title="文章预览" :visible.sync="detailVisible" width="80%">
+        <h1 class="title">{{artDetail.title}}</h1>
+
+        <div class="info">
+          <span>作者：{{artDetail.nickname || artDetail.username}}</span>
+           <span>发布时间：{{ $formatDate(artDetail.pub_date) }}</span>
+          <span>所属分类：{{ artDetail.cate_name }}</span>
+          <span>状态：{{ artDetail.state }}</span>
+        </div>
+
+        <!-- 分割线 -->
+        <el-divider></el-divider>
+        <!-- 文章的封面 -->
+        <img :src="baseURL + artDetail.cover_img"/>
+        <!-- 文章的详情 -->
+        <div>
+          <iframe :srcdoc="artDetail.content" frameborder="0">
+          </iframe>
+        </div>
+      </el-dialog>
     </el-card>
   </div>
 </template>
 
 <script>
-import { getArtCateListAPI, uploadArticleAPI, getArticleListAPI } from '@/api'
+import { getArtCateListAPI, uploadArticleAPI, getArticleListAPI, getArticleDetailFn, delArticleAPI } from '@/api'
+import { baseURL } from '@/utils/request'
 export default {
   name: 'ArtList',
   data () {
@@ -85,12 +133,13 @@ export default {
       // 查询参数对象
       q: {
         pagenum: 1, // 默認拿第一頁數據
-        pagesize: 5, // 當前頁要幾條數據
+        pagesize: 2, // 當前頁要幾條數據
         cate_id: '',
         state: ''
       },
       // 控制发表文章对话框的显示与隐藏
       pubDialogVisible: false,
+      detailVisible: false, // 文章詳情對話框
       // 表单的数据对象
       pubForm: {
         title: '',
@@ -115,7 +164,9 @@ export default {
       },
       cateList: [], // 儲存文章分類
       artList: [], // 儲存文章列表
-      total: 0 // 文章總數
+      total: 0, // 文章總數
+      artDetail: {}, // 文章詳情
+      baseURL // 服務器基地址
     }
   },
   methods: {
@@ -203,7 +254,57 @@ export default {
         coverImg: null, // 文章封面(前台)
         state: '' // 文章發布狀態
       }
-      console.log(this.pubForm)
+    },
+    // 選擇每頁要顯示的筆數
+    handleSizeChangeFn (sizes) {
+      this.q.pagesize = sizes
+      this.q.pagenum = 1
+      this.getArticleListFn()
+    },
+    // 點擊頁碼時觸發的函數
+    handleCurrentChangeFn (nowPage) {
+      this.q.pagenum = nowPage
+      this.getArticleListFn()
+    },
+    // 篩選按鈕
+    choseFn () {
+      // console.log(this.q)
+      this.q.pagenum = 1
+      this.getArticleListFn()
+    },
+    // 篩選重置按鈕
+    resetFn () {
+      this.q.cate_id = ''
+      this.q.state = ''
+      this.q.pagenum = 1
+      this.getArticleListFn()
+    },
+    // 顯示文章詳情
+    async showDetailFn (id) {
+      const { data } = await getArticleDetailFn(id)
+      if (data.code !== 0) return this.$message.error('獲取文章詳情失敗!!')
+      this.detailVisible = true
+      this.artDetail = data.data
+    },
+    // 刪除文章
+    async removeFn (id) {
+      // 1. 询问用户是否要删除
+      const confirmResult = await this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).catch(err => err)
+      // 2. 取消了删除
+      if (confirmResult === 'cancel') return false
+      // 3.確認刪除
+      // 执行删除的操作
+      const { data: res } = await delArticleAPI(id)
+      // console.log(res)
+      if (res.code !== 0) return this.$message.error('删除失败!')
+      this.$message.success('删除成功!')
+      this.q.pagenum = 1
+      // 刷新列表数据
+      this.getArticleListFn()
     }
   },
   created () {
@@ -234,5 +335,29 @@ export default {
   width: 400px;
   height: 280px;
   object-fit: cover;
+}
+.el-pagination{
+  margin-top: 50px;
+}
+.title {
+  font-size: 24px;
+  text-align: center;
+  font-weight: normal;
+  color: #000;
+  margin: 0 0 10px 0;
+}
+
+.info {
+  font-size: 12px;
+  span {
+    margin-right: 20px;
+  }
+}
+
+// 修改 dialog 内部元素的样式，需要添加样式穿透
+::v-deep .detail-box {
+  img {
+    width: 500px;
+  }
 }
 </style>

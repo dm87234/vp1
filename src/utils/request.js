@@ -6,8 +6,9 @@ import router from '@/router'
 
 // 用axios.create() 創建一個帶配置項的自定義axios函數
 // myAxios 請求的時候，地址是 baseURL + url
+export const baseURL = 'http://big-event-vue-api-t.itheima.net'
 const myAxios = axios.create({
-  baseURL: 'http://big-event-vue-api-t.itheima.net'
+  baseURL
 })
 
 // 添加请求拦截器
